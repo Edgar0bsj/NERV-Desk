@@ -22,5 +22,12 @@ func SetupRouter(userHandler *userhandler.UserHandler, ticketHandler *handler.Ti
 		userRoutes.DELETE("/ticket/:id", ticketHandler.DeleteTicket)
 	}
 
+	attendantRoutes := r.Group("/attendant", middle.RequireAttendantRole())
+	{
+		attendantRoutes.GET("/ticket", ticketHandler.FindAllTicketsAttendant)
+		attendantRoutes.POST("ticket/assume/:id", ticketHandler.AssumeTicket)
+		attendantRoutes.POST("ticket/changestatus/:id", ticketHandler.ChangeStatus)
+	}
+
 	return r
 }

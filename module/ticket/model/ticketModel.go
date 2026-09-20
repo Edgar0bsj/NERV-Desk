@@ -23,9 +23,11 @@ const (
 )
 
 type TicketModel struct {
-	ID          string `gorm:"primaryKey"`
+	ID string `gorm:"primaryKey"`
+
 	UserID      string `gorm:"not null"`
 	AttendantID string `gorm:"default:null"`
+
 	Title       string `gorm:"not null"`
 	Description string
 	Status      TicketStatus

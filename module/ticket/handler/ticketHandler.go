@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -156,5 +157,151 @@ func (h *TicketHandler) DeleteTicket(c *gin.Context) {
 
 	// 9. Retornar resposta de sucesso confirmando a exclusão.
 	c.JSON(http.StatusOK, gin.H{"msg": "ticket excluido com sucesso!"})
+
+}
+
+func (h *TicketHandler) FindAllTicketsAttendant(c *gin.Context) {
+	// 1. Obter os chamados dos usuários.
+	allTickets, err := h.service.FindAllTickets()
+
+	// // 2. Caso ocorra um erro durante a busca, retornar Internal Server Error.
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+		return
+	}
+
+	// 3. Retornar a lista de chamados com status de sucesso.
+	c.JSON(http.StatusOK, gin.H{"tickets": allTickets})
+
+}
+
+func (h *TicketHandler) AssumeTicket(c *gin.Context) {
+	// 1. Obter o ID do ticket a partir dos parâmetros da rota.
+	ticketId := c.Param("id")
+
+	// 2. Obter o ID do atendente autenticado a partir do contexto da requisição.
+	_attendantId, exists := c.Get("user_id")
+
+	// 3. Validar os IDs recebidos.
+	if _, err := uuid.Parse(ticketId); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parameter"})
+		return
+	}
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+		return
+	}
+
+	// 5. Buscar o ticket pelo ID.
+	ticket, err := h.service.FindByIdTicket(ticketId)
+
+	// 6. Caso o ticket não exista, retornar Not Found.
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+
+	// 7. Verificar se o ticket possui um atendente vinculado.
+	if ticket.AttendantID != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ticket already linked"})
+		return
+	}
+
+	// 9. Verificar se o status do ticket é "OPEN".
+	if ticket.Status != model.StatusOpen {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "is not open"})
+		return
+	}
+
+	// 11. Vincular o atendente autenticado ao ticket.
+	_attend, ok := _attendantId.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+		return
+	}
+
+	resultTicket, err := h.service.SetteAttendant(ticket, _attend)
+
+	// 12. Caso ocorra um erro durante a atualização, retornar Internal Server Error.
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+		return
+	}
+
+	// 13. Retornar o ticket atualizado com status de sucesso.
+	c.JSON(http.StatusOK, gin.H{"tickets": resultTicket})
+
+}
+
+func (h *TicketHandler) ChangeStatus(c *gin.Context) {
+	// 1. Obter o ID do ticket a partir dos parâmetros da rota.
+	ticketId := c.Param("id")
+
+	// 2. Obter o ID do atendente autenticado a partir do contexto da requisição.
+	_attendantId, exists := c.Get("user_id")
+
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+		return
+	}
+
+	// 3. Receber e validar o novo status informado.
+	validetion := validator.New()
+	var req *service.TicketChangeStatusDto
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	// 4. Verificar se o novo status é "RESOLVED" ou "CLOSED".
+	if err := validetion.Struct(req); err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{
+				"error": "Validation error, only \"RESOLVED\" or \"CLOSED\" statuses are accepted.",
+			})
+		return
+	}
+
+	// 6. Buscar o ticket pelo ID.
+	ticket, err := h.service.FindByIdTicket(ticketId)
+
+	// 7. Caso o ticket não exista, retornar Not Found.
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "ticket not found"})
+		return
+	}
+
+	// 8. Verificar se o ticket está vinculado ao atendente que realizou a requisição.
+	_attendantIdStr, ok := _attendantId.(string)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+		return
+	}
+
+	// 9. Caso o ticket pertença a outro atendente ou não possua atendente vinculado, impedir a alteração e retornar Forbidden.
+	if ticket.AttendantID != _attendantIdStr {
+		c.JSON(http.StatusForbidden, gin.H{"error": "ticket linked to another attendant"})
+		return
+	}
+
+	// 10. Verificar se o status atual do ticket é "EM_PROCESS".
+	if (ticket.Status != model.StatusInProcess) && (ticket.Status != model.StatusOpen) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "The ticket is open or in process"})
+		return
+	}
+
+	// 12. Atualizar o status do ticket para o novo status.
+	err = h.service.ChangeStatus(ticket, req)
+
+	// 13. Caso ocorra um erro durante a atualização, retornar Internal Server Error.
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
+		return
+	}
+	// 14. Retornar o ticket atualizado com status de sucesso.
+	response := fmt.Sprintf("ticket %v | status atualizado com sucesso %v", ticket.ID, req.Status)
+	c.JSON(http.StatusOK, gin.H{"msg": response})
 
 }

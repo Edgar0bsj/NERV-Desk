@@ -18,7 +18,7 @@ func New(repo *repository.TicketRepository) *TicketService {
 	}
 }
 
-func (s *TicketService) ListMyTickets(userId string) ([]*model.TicketModel, error) {
+func (s *TicketService) ListMyTickets(userId string) ([]*repository.TickerUserQuery, error) {
 	return s.repo.ListMyTickets(userId)
 }
 
@@ -50,4 +50,37 @@ func (s *TicketService) FindByIdTicket(ticketId string) (*model.TicketModel, err
 func (s *TicketService) DeleteTicket(ticketId string) error {
 	return s.repo.Delete(ticketId)
 
+}
+
+func (s *TicketService) FindAllTickets() ([]*repository.TickerUserQuery, error) {
+	return s.repo.FindAll()
+
+}
+
+func (s *TicketService) SetteAttendant(ticket *model.TicketModel, attend string) (*model.TicketModel, error) {
+	ticket.AttendantID = attend
+	ticket.Status = model.StatusInProcess
+	ticket.Updated_at = time.Now()
+
+	if err := s.repo.Update(ticket); err != nil {
+		return nil, err
+	}
+
+	newTicket, err := s.repo.FindByID(ticket.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return newTicket, nil
+
+}
+
+func (s *TicketService) ChangeStatus(ticket *model.TicketModel, req *TicketChangeStatusDto) error {
+	ticket.Status = req.Status
+	ticket.Updated_at = time.Now()
+	if err := s.repo.Update(ticket); err != nil {
+		return err
+	}
+	return nil
 }

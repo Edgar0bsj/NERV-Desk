@@ -8,6 +8,7 @@ import (
 	"github.com/edgar0bsj/nerv-desk/module/user/model"
 	"github.com/edgar0bsj/nerv-desk/module/user/repository"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // ==============================================
@@ -24,12 +25,14 @@ func TestUserMysqlRepository_Save(t *testing.T) {
 
 	repository := repository.New(db)
 
+	hashPasswod, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+
 	user = model.User{
 		ID:            uuid.New().String(),
-		Name:          "Edgar teste",
-		Email:         "Edgar@email.com",
-		Password_hash: "hashash1234",
-		Role:          model.RoleUser,
+		Name:          "Luciane",
+		Email:         "Luciane@email.com",
+		Password_hash: string(hashPasswod),
+		Role:          model.RoleAttendant,
 		Created_at:    time.Now(),
 		Updated_at:    time.Now(),
 	}
@@ -129,7 +132,7 @@ func TestUserMysqlRepository_Delete(t *testing.T) {
 
 	repository := repository.New(db)
 
-	if err := repository.Delete("692fe79e-c315-4187-bf5b-cd76742376b7"); err != nil {
+	if err := repository.Delete("3bae29a6-593b-4f0f-846a-a16d13bf76c0"); err != nil {
 		t.Fatalf("Error ao buscar user")
 	}
 
