@@ -2,113 +2,82 @@ package userhandler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/edgar0bsj/nerv-desk/module/user/service"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
-	svc service.UserServiceInterface
+	svc *service.UserService
 }
 
-func New(useCases service.UserServiceInterface) *UserHandler {
+func New(useCases *service.UserService) *UserHandler {
 	return &UserHandler{
 		svc: useCases,
 	}
 }
 
-func (h *UserHandler) ListUsers(c *gin.Context) {
-	users, err := h.svc.FindAllUsers()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error do servidor",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, users)
-
-}
-
-// Criar um usuario
-func (h *UserHandler) UserRegister(c *gin.Context) {
-	var req service.UserRegisterDto
+func (h *UserHandler) UserLogin(c *gin.Context) {
+	// 0. Capturar corpo da requesição
+	var req service.UserLoginDto
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "corpo da solicitação inválido",
+			"error": "Invalid request body",
 		})
 		return
 	}
 
-	err := h.svc.SaveUser(&req)
-	if err != nil {
+	// 1. Validar campos.
+	validation := validator.New()
+	if err := validation.Struct(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "falhas ao salvar",
+			"error": "Invalid request body",
 		})
 		return
 	}
 
+	// 2. Buscar o usuário pelo e-mail.
+	user, err := h.svc.FindByEmail(req.Email)
+
+	// 3. Caso não exista, retornar erro de autenticação 401 Unauthorized.
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "authentication error",
+		})
+		return
+	}
+
+	// 4. Validar a senha informada.
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password_hash), []byte(req.Password))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "authentication error",
+		})
+		return
+	}
+	// 5. Gerar o JWT com o ID e a role do usuário.
+	claims := jwt.MapClaims{
+		"user_id":   user.ID,
+		"user_role": user.Role,
+		"exp":       time.Now().Add(time.Hour * 24).Unix(), // expira em 24h
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	assinaturaToken, err := token.SignedString([]byte("nead_desk_secret")) //Senha provisória
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error generating token"})
+		return
+	}
+	// 6. Retornar o JWT.
 	c.JSON(http.StatusCreated, gin.H{
-		"msg": "Usuario salvo com sucesso!",
+		"access_token": assinaturaToken,
+		"token_type":   "Bearer",
 	})
 
-}
-
-// Editar Usuario
-func (h *UserHandler) UserUpdate(c *gin.Context) {
-	userUpdate := service.UserUpdateDto{
-		ID: c.Param("id"),
-	}
-
-	err := c.ShouldBindJSON(&userUpdate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Error no corpo da requisição",
-		})
-		return
-	}
-
-	err = h.svc.UpdateUser(&userUpdate)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Error ao atualizar usuario",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"msg": "Usuario atualizado com sucesso!",
-	})
-}
-
-// Deletar usuario
-func (h *UserHandler) UserDelete(c *gin.Context) {
-	user_id := c.Param("id")
-
-	if err := h.svc.DeleteUser(user_id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Error ao Deletar usuario",
-		})
-		return
-	}
-
-	c.JSON(http.StatusNoContent, nil)
-}
-
-// Atualizar senha
-func (h *UserHandler) UserUpdatePassword(c *gin.Context) {
-	var newPassword service.UserUpdatePassword
-	user_id := c.Param("id")
-
-	if err := c.ShouldBindJSON(&newPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error no corpo da requisição"})
-		return
-	}
-
-	if err := h.svc.UpdatePassword(user_id, newPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error ao Atualizar Senha"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"msg": "Senha atualizada com sucesso!"})
 }

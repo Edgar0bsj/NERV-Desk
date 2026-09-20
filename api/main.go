@@ -1,19 +1,36 @@
 package main
 
 import (
-	"net/http"
+	"log"
 
-	"github.com/gin-gonic/gin"
+	ticketDatabase "github.com/edgar0bsj/nerv-desk/module/ticket/database"
+	ticketHandler "github.com/edgar0bsj/nerv-desk/module/ticket/handler"
+	ticketRepository "github.com/edgar0bsj/nerv-desk/module/ticket/repository"
+	ticketService "github.com/edgar0bsj/nerv-desk/module/ticket/service"
+	"github.com/edgar0bsj/nerv-desk/module/user/database"
+	userhandler "github.com/edgar0bsj/nerv-desk/module/user/handler"
+	"github.com/edgar0bsj/nerv-desk/module/user/repository"
+	"github.com/edgar0bsj/nerv-desk/module/user/service"
+	"github.com/edgar0bsj/nerv-desk/router"
 )
 
 func main() {
-	router := gin.Default()
+	// User Core
+	userDb, _ := database.New()
+	userRepo := repository.New(userDb)
+	userSvc := service.New(userRepo)
+	userHandler := userhandler.New(userSvc)
 
-	router.GET("/api/v1/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
+	// Ticket Core
+	ticketDb, _ := ticketDatabase.New()
+	ticketRepo := ticketRepository.New(ticketDb)
+	ticketSvc := ticketService.New(ticketRepo)
+	ticketHandler := ticketHandler.New(ticketSvc)
 
-	router.Run(":8080")
+	r := router.SetupRouter(userHandler, ticketHandler)
+
+	log.Println("Server running on port 8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }

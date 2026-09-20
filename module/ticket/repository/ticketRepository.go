@@ -84,10 +84,10 @@ func (t *TicketRepository) FindByTitle(title string) (*model.TicketModel, error)
 	return ticket, nil
 }
 
-func (t *TicketRepository) FindAllByUserId(user_id string) ([]*model.TicketModel, error) {
+func (t *TicketRepository) ListMyTickets(userId string) ([]*model.TicketModel, error) {
 	var tickets []*model.TicketModel
 
-	err := t.db.Where("user_id = ?", user_id).Find(&tickets).Error
+	err := t.db.Where("user_id = ?", userId).Find(&tickets).Error
 	if err != nil {
 		return nil, err
 	}

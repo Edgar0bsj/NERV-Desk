@@ -8,5 +8,5 @@ type UserStorage interface {
 	FindByID(id string) (*model.User, error)
 	Update(User *model.User) error
 	Delete(id string) error
-	UpdatePassword(id, newPasswordHash string) error
+	FindByEmail(email string) (*model.User, error)
 }

@@ -78,17 +78,12 @@ func (s *UserMysqlRepository) Delete(id string) error {
 	return nil
 }
 
-func (s *UserMysqlRepository) UpdatePassword(id, newPasswordHash string) error {
-	var user model.User
-	err := s.db.Where("id = ?", id).First(&user).Error
-	if err != nil {
-		return err
-	}
+func (s *UserMysqlRepository) FindByEmail(email string) (*model.User, error) {
+	var user *model.User
 
-	err = s.db.Model(&user).Update("Password_hash", newPasswordHash).Error
+	err := s.db.Where("Email = ?", email).First(&user).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return nil
+	return user, nil
 }
