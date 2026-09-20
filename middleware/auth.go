@@ -81,8 +81,15 @@ func RequireUserRole() gin.HandlerFunc {
 		c.Set("user_id", claims["user_id"])
 		c.Set("user_role", claims["user_role"])
 
+		// type safety
+		_role, ok := claims["user_role"].(string)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			c.Abort()
+		}
+
 		// 7. Caso a role seja diferente de "USER", impedir o acesso e retornar Forbidden.
-		if claims["user_role"] != model.RoleUser {
+		if model.UserRole(_role) != model.RoleUser {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 			c.Abort()
 		}
@@ -125,8 +132,15 @@ func RequireAttendantRole() gin.HandlerFunc {
 		c.Set("user_id", claims["user_id"])
 		c.Set("user_role", claims["user_role"])
 
+		// type safety
+		_role, ok := claims["user_role"].(string)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			c.Abort()
+		}
+
 		// 7. Caso a role seja diferente de "USER", impedir o acesso e retornar Forbidden.
-		if claims["user_role"] != model.RoleAttendant {
+		if model.UserRole(_role) != model.RoleAttendant {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 			c.Abort()
 		}
@@ -169,8 +183,15 @@ func RequireAdminRole() gin.HandlerFunc {
 		c.Set("user_id", claims["user_id"])
 		c.Set("user_role", claims["user_role"])
 
+		// type safety
+		_role, ok := claims["user_role"].(string)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+			c.Abort()
+		}
+
 		// 7. Caso a role seja diferente de "USER", impedir o acesso e retornar Forbidden.
-		if claims["user_role"] != model.RoleAdmin {
+		if model.UserRole(_role) != model.RoleAdmin {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 			c.Abort()
 		}
