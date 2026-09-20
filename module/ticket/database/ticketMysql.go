@@ -1,6 +1,8 @@
 package database
 
 import (
+	"fmt"
+
 	"github.com/edgar0bsj/nerv-desk/module/ticket/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -19,6 +21,9 @@ func New() (*gorm.DB, error) {
 	}
 
 	if err := db.AutoMigrate(&model.TicketModel{}); err != nil {
+		fmt.Println("===================================")
+		fmt.Println(err.Error())
+		fmt.Println("===================================")
 		return nil, err
 	}
 

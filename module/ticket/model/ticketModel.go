@@ -3,6 +3,8 @@ package model
 import (
 	"errors"
 	"time"
+
+	"github.com/edgar0bsj/nerv-desk/module/user/model"
 )
 
 type TicketStatus string
@@ -23,10 +25,13 @@ const (
 )
 
 type TicketModel struct {
-	ID string `gorm:"primaryKey"`
+	ID string `gorm:"primaryKey;type:varchar(50)"`
 
-	UserID      string `gorm:"not null"`
-	AttendantID string `gorm:"default:null"`
+	UserID string      `gorm:"not null"`
+	User   *model.User `gorm:"foreignKey:UserID"`
+
+	AttendantID string      `gorm:"default:null"`
+	Attendant   *model.User `gorm:"foreignKey:AttendantID"`
 
 	Title       string `gorm:"not null"`
 	Description string

@@ -18,7 +18,7 @@ func New(repo *repository.TicketRepository) *TicketService {
 	}
 }
 
-func (s *TicketService) ListMyTickets(userId string) ([]*repository.TickerUserQuery, error) {
+func (s *TicketService) ListMyTickets(userId string) ([]*model.TicketModel, error) {
 	return s.repo.ListMyTickets(userId)
 }
 
@@ -52,7 +52,7 @@ func (s *TicketService) DeleteTicket(ticketId string) error {
 
 }
 
-func (s *TicketService) FindAllTickets() ([]*repository.TickerUserQuery, error) {
+func (s *TicketService) FindAllTickets() ([]*model.TicketModel, error) {
 	return s.repo.FindAll()
 
 }

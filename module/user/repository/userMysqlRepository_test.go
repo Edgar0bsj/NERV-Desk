@@ -25,14 +25,14 @@ func TestUserMysqlRepository_Save(t *testing.T) {
 
 	repository := repository.New(db)
 
-	hashPasswod, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	hashPasswod, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
 
 	user = model.User{
 		ID:            uuid.New().String(),
-		Name:          "Luciane",
-		Email:         "Luciane@email.com",
+		Name:          "teste",
+		Email:         "teste@email.com",
 		Password_hash: string(hashPasswod),
-		Role:          model.RoleAttendant,
+		Role:          model.RoleAdmin,
 		Created_at:    time.Now(),
 		Updated_at:    time.Now(),
 	}

@@ -22,7 +22,7 @@ const (
 
 // STRUCK USER
 type User struct {
-	ID            string `gorm:"primaryKey"`
+	ID            string `gorm:"primaryKey;type:varchar(50)"`
 	Name          string
 	Email         string `gorm:"unique"`
 	Password_hash string

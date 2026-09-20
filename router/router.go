@@ -25,8 +25,18 @@ func SetupRouter(userHandler *userhandler.UserHandler, ticketHandler *handler.Ti
 	attendantRoutes := r.Group("/attendant", middle.RequireAttendantRole())
 	{
 		attendantRoutes.GET("/ticket", ticketHandler.FindAllTicketsAttendant)
-		attendantRoutes.POST("ticket/assume/:id", ticketHandler.AssumeTicket)
-		attendantRoutes.POST("ticket/changestatus/:id", ticketHandler.ChangeStatus)
+		attendantRoutes.PATCH("ticket/assume/:id", ticketHandler.AssumeTicket)
+		attendantRoutes.PATCH("ticket/changestatus/:id", ticketHandler.ChangeStatus)
+	}
+
+	adminRoutes := r.Group("/admin", middle.RequireAdminRole())
+	{
+		adminRoutes.POST("/register", userHandler.UserRegister)
+		adminRoutes.GET("/user/list", userHandler.ListUser)
+		adminRoutes.PUT("/user/edit/:id", userHandler.EditUser)
+		adminRoutes.DELETE("/user/delete/:id", userHandler.DeleteUser)
+		adminRoutes.PATCH("/user/change/password/:id", userHandler.ChangePassword)
+		adminRoutes.GET("/ticket", ticketHandler.FindAllTicketsAttendant)
 	}
 
 	return r
